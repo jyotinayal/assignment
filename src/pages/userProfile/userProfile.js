@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import Clock from '../../component/clock/clock';
 import Post from '../../component/post/post';
 import { Box, Button, Grid, MenuItem, Select, InputLabel, FormControl, Typography } from '@mui/material';
 
@@ -14,6 +13,17 @@ const UserProfile = () => {
     const [clockPaused, setClockPaused] = useState(false);
     const [currentTime, setCurrentTime] = useState('');
 
+    const toggleClock = () => {
+        setClockPaused(prevPaused => !prevPaused);
+    };
+    const fetchCurrentTime = async () => {
+        try {
+            const response = await axios.get(`http://worldtimeapi.org/api/timezone/${selectedCountry}`);
+            setCurrentTime(response.data.utc_datetime);
+        } catch (error) {
+            console.error('Error fetching current time:', error);
+        }
+    };
     useEffect(() => {
         // Fetch user details
         axios.get(`https://jsonplaceholder.typicode.com/users/${id}`)
@@ -31,9 +41,11 @@ const UserProfile = () => {
             .catch(error => console.error(error));
 
         fetchCurrentTime();
-        const intervalId = setInterval(fetchCurrentTime, 1000);
-        return () => clearInterval(intervalId);
-    }, [id, selectedCountry]);
+        if (!clockPaused) {
+            const intervalId = setInterval(fetchCurrentTime, 1000);
+            return () => clearInterval(intervalId);
+        }
+    }, [id, selectedCountry,clockPaused]);
     const handleCountryChange = async (event) => {
         const selectedCountry = event.target.value;
         setSelectedCountry(selectedCountry);
@@ -45,18 +57,6 @@ const UserProfile = () => {
             setCurrentTime(response.data.utc_datetime);
         } catch (error) {
             console.error(error);
-        }
-    };
-
-    const toggleClock = () => {
-        setClockPaused(prevPaused => !prevPaused);
-    };
-    const fetchCurrentTime = async () => {
-        try {
-            const response = await axios.get(`http://worldtimeapi.org/api/timezone/${selectedCountry}`);
-            setCurrentTime(response.data.utc_datetime);
-        } catch (error) {
-            console.error('Error fetching current time:', error);
         }
     };
 
