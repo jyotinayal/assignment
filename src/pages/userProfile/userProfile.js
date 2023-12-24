@@ -10,7 +10,7 @@ const UserProfile = () => {
     const [user, setUser] = useState(null);
     const [posts, setPosts] = useState([]);
     const [countries, setCountries] = useState([]);
-    const [selectedCountry, setSelectedCountry] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState('Asia/Kolkata');
     const [clockPaused, setClockPaused] = useState(false);
     const [currentTime, setCurrentTime] = useState('');
 
@@ -29,8 +29,11 @@ const UserProfile = () => {
         axios.get('http://worldtimeapi.org/api/timezone')
             .then(response => setCountries(response.data))
             .catch(error => console.error(error));
-    }, [id]);
 
+        fetchCurrentTime();
+        const intervalId = setInterval(fetchCurrentTime, 1000);
+        return () => clearInterval(intervalId);
+    }, [id, selectedCountry]);
     const handleCountryChange = async (event) => {
         const selectedCountry = event.target.value;
         setSelectedCountry(selectedCountry);
@@ -39,7 +42,7 @@ const UserProfile = () => {
         try {
             const response = await axios.get(`http://worldtimeapi.org/api/timezone/${selectedCountry}`);
             const { datetime } = response.data;
-            setCurrentTime(datetime);
+            setCurrentTime(response.data.utc_datetime);
         } catch (error) {
             console.error(error);
         }
@@ -47,6 +50,14 @@ const UserProfile = () => {
 
     const toggleClock = () => {
         setClockPaused(prevPaused => !prevPaused);
+    };
+    const fetchCurrentTime = async () => {
+        try {
+            const response = await axios.get(`http://worldtimeapi.org/api/timezone/${selectedCountry}`);
+            setCurrentTime(response.data.utc_datetime);
+        } catch (error) {
+            console.error('Error fetching current time:', error);
+        }
     };
 
     return (
@@ -64,20 +75,20 @@ const UserProfile = () => {
                     }}>Back</Link>
                 </Grid>
                 <Grid item xs={12} md={3}>
-                <FormControl fullWidth>
-      <InputLabel id="select-label">Select an Option</InputLabel>
-                    <Select value={selectedCountry}  label="Select an Option" onChange={handleCountryChange}>
-                        <MenuItem value="">Select a country</MenuItem>
-                        {countries.map(country => (
-                            <MenuItem key={country} value={country}>
-                                {country}
-                            </MenuItem>
-                        ))}
-                    </Select>
+                    <FormControl fullWidth>
+                        <InputLabel id="select-label">Select an Option</InputLabel>
+                        <Select value={selectedCountry} label="Select an Option" onChange={handleCountryChange}>
+                            <MenuItem value="">Select a country</MenuItem>
+                            {countries.map(country => (
+                                <MenuItem key={country} value={country}>
+                                    {country}
+                                </MenuItem>
+                            ))}
+                        </Select>
                     </FormControl>
                 </Grid>
                 <Grid item xs={12} md={5}>
-                    <Clock paused={clockPaused} selectedCountry={selectedCountry} />
+                    <Typography sx={{ textAlign: 'center', margin: '20px 0' }} varient="h3">{currentTime}</Typography>
                 </Grid>
                 <Grid item xs={12} md={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button onClick={toggleClock} sx={{
@@ -88,6 +99,9 @@ const UserProfile = () => {
                         backgroundColor: '#007BFF',
                         borderRadius: '5px',
                         cursor: 'pointer',
+                        '&:hover': {
+                            backgroundColor: '#007BFF',
+                        },
                     }}>
                         {clockPaused ? 'Start' : 'Pause'}
                     </Button>
@@ -95,15 +109,15 @@ const UserProfile = () => {
                 <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
                     <Typography variant="h4" my={1}>Profile Page</Typography>
                 </Grid>
-                <Grid item xs={12} container sx={{ border: '2px solid black' }}>
-                    <Grid xs={12} md={6}>
-                        <Grid item xs={12}><h3>User Details</h3></Grid>
+                <Grid item xs={12} container sx={{ border: '2px solid black' }} >
+                    <Grid xs={12} md={6} p={1}>
+                        <Grid item xs={12}><Typography varient="h3" sx={{ fontWeight: 'bold' }}>User Details</Typography></Grid>
                         <Grid item xs={12}>Name: {user?.name}</Grid>
                         <Grid item xs={12}>Username: {user?.username}</Grid>
                         <Grid item xs={12}>Catch Phrase: {user?.company.catchPhrase}</Grid>
                     </Grid>
-                    <Grid xs={12} md={6}>
-                        <Grid item xs={12}><h3>Contact Information</h3></Grid>
+                    <Grid xs={12} md={6} p={1}>
+                        <Grid item xs={12}><Typography varient="h3" sx={{ fontWeight: 'bold' }}>Contact Information</Typography></Grid>
                         <Grid item xs={12}>Address: {user?.address.street}, {user?.address.suite}, {user?.address.city}</Grid>
                         <Grid item xs={12}>Email: {user?.email}</Grid>
                         <Grid item xs={12}>Phone: {user?.phone}</Grid>
@@ -113,16 +127,16 @@ const UserProfile = () => {
 
             {user && (
                 <>
-                <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Typography variant="h4" my={1}>Post</Typography>
-                </Grid>
-                <Grid container spacing={1}>
-                    {posts.map(post => (
-                        <Grid item xs={12} md={4}>
-                            <Post key={post.id} post={post} title={post?.title} content={post?.body} />
-                        </Grid>
-                    ))}
-                </Grid></>
+                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Typography variant="h4" my={1}>Post</Typography>
+                    </Grid>
+                    <Grid container spacing={1} p={1}>
+                        {posts.map(post => (
+                            <Grid item xs={12} md={4}>
+                                <Post key={post.id} post={post} title={post?.title} content={post?.body} />
+                            </Grid>
+                        ))}
+                    </Grid></>
             )}
         </Box>
     );
